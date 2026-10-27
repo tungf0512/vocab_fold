@@ -34,6 +34,17 @@ python -m http.server 8000
 and open <http://localhost:8000/>. Only the current page/daily deck is rendered
 into the DOM; the full dataset is held as local data for efficient filtering.
 
+## Pronunciation on iPhone
+
+Pronunciation uses the voices supplied by the browser and operating system, so
+an iPhone cannot use a voice installed only on a computer. Tap the speaker
+button in the paper toolbar to choose an English voice; FoldLex automatically
+prefers locally available Enhanced, Natural, Premium, or Neural voices and
+remembers your choice on that device. For the clearest iPhone output, download
+an Enhanced English voice in **Settings → Accessibility → Spoken Content →
+Voices**, then select it in FoldLex. The voice feature remains offline after
+the iOS voice has been installed.
+
 ## Data artifacts
 
 - `data/FoldLex-100000-Vocabulary.csv` — preserved canonical list and original

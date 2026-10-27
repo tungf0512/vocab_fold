@@ -205,7 +205,16 @@ function render(){heading();if(statsDirty||statsLastDay!==dateKey()){stats();sta
 function rerenderKeepScroll(){render()}
 function toggleSave(id){statsDirty=true;store.saved[id]=!store.saved[id];if(!store.saved[id])delete store.saved[id];persist();rerenderKeepScroll();notify(store.saved[id]?'Saved to your notebook':'Removed from saved words')}
 function mark(id,kind){statsDirty=true;let r=byId.get(id);if(!r)return;const p={...getProgress(r)};const today=dateKey();let stage=Number(p.stage||0);if(kind==='good'){stage=Math.min(stage+1,6);const steps=[0,1,3,7,14,30,60];p.next=shiftDate(steps[stage]);p.needsWork=false;}else{stage=0;p.next=today;p.needsWork=true;}p.seen=true;p.stage=stage;p.reviewDate=today;p.lastResult=kind;store.progress[id]=p;store.history[today]=Number(store.history[today]||0)+1;persist();rerenderKeepScroll();notify(kind==='good'?'Nice recall! Next review: '+p.next:'Marked for extra practice today')}
-function speak(id){let r=byId.get(id);if(!r)return;const synth=window.speechSynthesis;if(!synth||typeof window.SpeechSynthesisUtterance!=='function'){notify('Pronunciation is not supported in this browser.');return}try{const voices=typeof synth.getVoices==='function'?synth.getVoices():[];const voice=voices.find(v=>/^en[-_](US|GB|AU|IE|IN|CA|ZA)(?:$|-)/i.test(v.lang))||voices.find(v=>/^en[-_]/i.test(v.lang));const u=new SpeechSynthesisUtterance(r.word);u.lang=voice?.lang||'en-US';if(voice)u.voice=voice;u.rate=.82;u.pitch=1;u.volume=1;let started=false;u.onstart=()=>{started=true};u.onerror=()=>{if(!started)notify('Pronunciation failed. Tap again or check Silent Mode.')} ;if(synth.speaking||synth.pending)synth.cancel();if(typeof synth.resume==='function')synth.resume();synth.speak(u);if(typeof synth.resume==='function')synth.resume()}catch(e){notify('Pronunciation is not available on this device.')}}
+const SPEECH_VOICE_KEY='foldlex-speech-voice-v1';
+function speechVoices(){const synth=window.speechSynthesis;return synth&&typeof synth.getVoices==='function'?synth.getVoices().filter(v=>/^en(?:[-_]|$)/i.test(String(v.lang||''))):[]}
+function speechVoiceKey(v){return String(v.voiceURI||((v.name||'English voice')+'|'+(v.lang||'en-US')))}
+function speechVoiceScore(v){const name=String(v.name||'').toLowerCase();let score=0;if(/enhanced|premium|natural|neural|high[ -]?quality|improved/.test(name))score+=100;if(/samantha|ava|alex|daniel|karen|moira|nicky|tom/.test(name))score+=15;if(/^en[-_]us(?:$|-)/i.test(String(v.lang||'')))score+=8;if(v.localService)score+=4;return score}
+function selectedSpeechVoice(voices=speechVoices()){let saved='';try{saved=localStorage.getItem(SPEECH_VOICE_KEY)||''}catch(e){}const stored=voices.find(v=>speechVoiceKey(v)===saved);return stored||voices.slice().sort((a,b)=>speechVoiceScore(b)-speechVoiceScore(a)||String(a.name||'').localeCompare(String(b.name||''),'en'))[0]||null}
+function setSpeechVoice(key){try{if(key)localStorage.setItem(SPEECH_VOICE_KEY,key);else localStorage.removeItem(SPEECH_VOICE_KEY)}catch(e){}}
+function speakText(text){const synth=window.speechSynthesis;if(!synth||typeof window.SpeechSynthesisUtterance!=='function'){notify('Pronunciation is not supported in this browser.');return}try{const voice=selectedSpeechVoice();const u=new SpeechSynthesisUtterance(String(text));u.lang=voice?.lang||'en-US';if(voice)u.voice=voice;u.rate=.82;u.pitch=1;u.volume=1;let started=false;u.onstart=()=>{started=true};u.onerror=()=>{if(!started)notify('Pronunciation failed. Tap again or check Silent Mode.')};if(synth.speaking||synth.pending)synth.cancel();if(typeof synth.resume==='function')synth.resume();synth.speak(u);if(typeof synth.resume==='function')setTimeout(()=>synth.resume(),0)}catch(e){notify('Pronunciation is not available on this device.')}}
+function speak(id){let r=byId.get(id);if(r)speakText(r.word)}
+window.foldlexSpeech={getVoices:speechVoices,getSelectedVoice:selectedSpeechVoice,getVoiceKey:speechVoiceKey,setVoice:setSpeechVoice,speakText};
+if(window.speechSynthesis&&typeof window.speechSynthesis.addEventListener==='function')window.speechSynthesis.addEventListener('voiceschanged',()=>window.dispatchEvent(new Event('foldlexvoiceschanged')));
 function setNav(nav){state.nav=nav;state.page=0;state.focusIndex=0;state.revealed.clear();$('#sidebar').classList.remove('mobile-open');render()}
 function setBand(v){state.band=v;state.page=0;state.focusIndex=0;state.revealed.clear();render()}
 function download(name,mime,content){const blob=new Blob([content],{type:mime});const url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
@@ -243,6 +252,49 @@ $('#addForm').addEventListener('submit',e=>{e.preventDefault();let word=$('#newW
 
 $$('.nav-btn').forEach(x=>x.addEventListener('click',()=>setNav(x.dataset.nav)));$('#brandLink').addEventListener('click',e=>{e.preventDefault();setNav('today')});$('#menuBtn').addEventListener('click',()=>$('#sidebar').classList.toggle('mobile-open'));$('#morningBtn').addEventListener('click',()=>switchMode('morning'));$('#foldedBtn').addEventListener('click',()=>switchMode('folded'));$$('.band-btn').forEach(x=>x.addEventListener('click',()=>setBand(x.dataset.band)));$('#topicSelect').addEventListener('change',e=>{state.topic=e.target.value;state.page=0;state.focusIndex=0;render()});let searchTimer;$('#searchInput').addEventListener('input',e=>{clearTimeout(searchTimer);const value=e.target.value;searchTimer=setTimeout(()=>{state.search=value;state.page=0;state.focusIndex=0;render()},150)});$('#shuffleBtn').addEventListener('click',()=>{state.salt++;state.page=0;state.focusIndex=0;state.revealed.clear();if(state.nav!=='today')state.shuffleList=true;render();notify(state.nav==='today'?'A new daily selection is ready.':'Current words shuffled.')});$('#focusBtn').addEventListener('click',()=>{state.focus=!state.focus;state.focusIndex=0;state.revealed.clear();render()});$('#prevBtn').addEventListener('click',()=>{if(state.page>0){state.page--;state.revealed.clear();render()}});$('#nextBtn').addEventListener('click',()=>{state.page++;state.revealed.clear();render()});$('#paperContent').addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;const id=btn.dataset.id;if(btn.dataset.reveal){state.revealed.add(btn.dataset.reveal);render()}else if(btn.classList.contains('fetch-again')){delete lookupStatus[id];render();}else if(btn.classList.contains('save-btn'))toggleSave(id);else if(btn.classList.contains('sound-btn'))speak(id);else if(btn.dataset.mark)mark(id,btn.dataset.mark);else if(btn.id==='focusNext'){let n=currentSlice().items.length;state.focusIndex=n?(state.focusIndex+1)%n:0;render()}});$('#addBtn').addEventListener('click',()=>modal('addOverlay',true));$('#dataBtn').addEventListener('click',()=>modal('dataOverlay',true));$('#backupHint').addEventListener('click',()=>modal('dataOverlay',true));$('#aboutBtn').addEventListener('click',()=>modal('aboutOverlay',true));$$('[data-close]').forEach(b=>b.addEventListener('click',()=>modal(b.dataset.close,false)));$$('.overlay').forEach(o=>o.addEventListener('mousedown',e=>{if(e.target===o)modal(o.id,false)}));$('#exportCSV').addEventListener('click',exportCSV);$('#exportJSON').addEventListener('click',exportJSON);$('#doImport').addEventListener('click',doImport);document.addEventListener('keydown',e=>{if(e.key==='Escape'){$$('.overlay.open').forEach(o=>modal(o.id,false));$('#sidebar').classList.remove('mobile-open');return}const tag=String(document.activeElement?.tagName||'');if(['INPUT','TEXTAREA','SELECT','BUTTON'].includes(tag)||$('.overlay.open'))return;if(state.focus){if(e.code==='ArrowRight'){let len=currentSlice().items.length;if(len){state.focusIndex=(state.focusIndex+1)%len;render()}}if(e.code==='Space'){const r=currentSlice().items[state.focusIndex];if(r){state.revealed.add(r.id);render()}e.preventDefault()}}});
 $('#dateText').textContent=new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}).format(new Date());allData();updateTopics();render();
+})();
+</script>
+<script>
+(function(){
+  const speech=window.foldlexSpeech;
+  if(!speech)return;
+  const toolbar=document.querySelector('.paper-top-right');
+  const dataButton=document.getElementById('dataBtn');
+  if(toolbar&&!document.getElementById('voiceBtn')){
+    const button=document.createElement('button');
+    button.type='button';button.id='voiceBtn';button.className='tiny-icon';button.title='Choose pronunciation voice';button.setAttribute('aria-label','Choose pronunciation voice');
+    button.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v4h3l4 3V7l-4 3H4Z"></path><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"></path></svg>';
+    toolbar.insertBefore(button,dataButton||null);
+  }
+  const overlay=document.createElement('div');
+  overlay.className='overlay';overlay.id='voiceOverlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','voiceTitle');
+  overlay.innerHTML='<div class="modal"><div class="modal-top"><div><h2 id="voiceTitle">Pronunciation voice</h2><p class="modal-intro">Choose the English voice used by the speaker buttons.</p></div><button aria-label="Close" class="close" data-voice-close type="button">×</button></div><div class="notice">For better sound on iPhone, download an <b>Enhanced English voice</b> in Settings → Accessibility → Spoken Content → Voices. Safari can use voices installed by iOS, but it cannot carry a computer voice to the phone.</div><div class="field" style="margin-top:18px"><label for="voiceSelect">English voice</label><select id="voiceSelect"></select></div><p class="small-help" id="voiceStatus">The selection is saved on this device.</p><div class="modal-actions" style="justify-content:flex-end"><button class="btn-primary" id="testVoiceBtn" type="button">Test voice</button></div></div>';
+  document.body.appendChild(overlay);
+  const select=overlay.querySelector('#voiceSelect');
+  const status=overlay.querySelector('#voiceStatus');
+  function refresh(){
+    const voices=speech.getVoices();
+    select.replaceChildren();
+    if(!voices.length){
+      const option=document.createElement('option');option.textContent='System voice (still loading…)';option.value='';select.appendChild(option);select.disabled=true;status.textContent='Tap again in a moment if voices are still loading.';return;
+    }
+    const selected=speech.getSelectedVoice(voices);
+    voices.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'en')).forEach(voice=>{
+      const option=document.createElement('option');option.value=speech.getVoiceKey(voice);option.textContent=(voice.name||'English voice')+' — '+(voice.lang||'en-US')+(voice.localService?' · on device':'');select.appendChild(option);
+    });
+    select.disabled=false;
+    if(selected)select.value=speech.getVoiceKey(selected);
+    status.textContent=selected?'Using '+(selected.name||'the selected English voice')+'.':'The system default voice will be used.';
+  }
+  function open(){refresh();overlay.classList.add('open');setTimeout(()=>select.focus(),10)}
+  function close(){overlay.classList.remove('open')}
+  document.getElementById('voiceBtn')?.addEventListener('click',open);
+  overlay.querySelector('[data-voice-close]').addEventListener('click',close);
+  overlay.addEventListener('mousedown',e=>{if(e.target===overlay)close()});
+  select.addEventListener('change',()=>{speech.setVoice(select.value);refresh()});
+  overlay.querySelector('#testVoiceBtn').addEventListener('click',()=>speech.speakText('This is the selected FoldLex pronunciation voice.'));
+  window.addEventListener('foldlexvoiceschanged',refresh);
+  refresh();
 })();
 </script>
 </body></html>
