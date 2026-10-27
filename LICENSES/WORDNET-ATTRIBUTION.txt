@@ -1,0 +1,15 @@
+Open English WordNet 2025 — optional offline dictionary dataset
+Source: https://en-word.net/
+Downloads: https://en-word.net/downloads
+Project: https://github.com/globalwordnet/english-wordnet
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License URL: https://creativecommons.org/licenses/by/4.0/
+
+Open English WordNet is based on Princeton WordNet 3.1 and extended by
+contributors to the Global WordNet Association. Credit both Princeton WordNet
+and the Open English WordNet team when redistributing derived definitions.
+Princeton WordNet license: https://wordnet.princeton.edu/license-and-commercial-use
+
+This ZIP DOES NOT include the WordNet XML archive, nor a corpus of WordNet
+English explanations. The optional builder downloads/uses the source on the
+user's computer and embeds matched definitions in their generated HTML.

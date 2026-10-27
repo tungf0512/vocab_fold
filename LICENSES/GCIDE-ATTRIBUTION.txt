@@ -1,0 +1,12 @@
+FoldLex may use the GNU Collaborative International Dictionary of English
+(GCIDE) 0.53 as an optional fallback source for rare vocabulary.
+
+GCIDE is distributed under the GNU General Public License, version 3 or later.
+The official source archive is:
+https://ftp.gnu.org/gnu/gcide/gcide-0.53.tar.xz
+
+GCIDE is maintained as a GNU project publication of the Collaborative
+International Dictionary of English. The source archive contains the full
+license and attribution text. FoldLex records retain `gcide-0.53` provenance
+when this fallback contributes a definition.
+

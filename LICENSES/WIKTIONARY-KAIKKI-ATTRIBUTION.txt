@@ -1,0 +1,15 @@
+FoldLex includes definitions and inflection metadata derived from English
+Wiktionary through the Kaikki.org machine-readable extraction.
+
+Wiktionary content is available under the Creative Commons Attribution-
+ShareAlike 4.0 International License (CC BY-SA 4.0):
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Source archive:
+https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz
+
+Wiktionary is a collaborative project of the Wikimedia Foundation. The
+packaged FoldLex records retain source and generation metadata in
+data/definitions.json. Redistribution of Wiktionary-derived text must preserve
+the applicable attribution and share-alike terms.
+

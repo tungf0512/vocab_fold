@@ -1,0 +1,25 @@
+{
+  "total_vocabulary_entries": 100000,
+  "valid_lexical_entries": 97760,
+  "entries_with_verified_definitions": 97623,
+  "entries_with_model_generated_definitions": 0,
+  "entries_with_morphology_generated_definitions": 137,
+  "entries_needing_manual_review": 2240,
+  "entries_with_unresolved_meanings": 2240,
+  "overall_definition_coverage_percent": 97.76,
+  "verified_definition_coverage_percent": 97.623,
+  "source_counts": {
+    "foldlex-curated": 514,
+    "gcide-0.53": 113,
+    "open-english-wordnet-2025-plus": 48502,
+    "open-english-wordnet-2025-plus+morphology": 128,
+    "unresolved": 2240,
+    "wiktionary-kaikki-english": 48494,
+    "wiktionary-kaikki-english+morphology": 9
+  },
+  "confidence_counts": {
+    "high": 97510,
+    "medium": 250,
+    "none": 2240
+  }
+}
